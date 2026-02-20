@@ -126,6 +126,9 @@ def create_app() -> FastAPI:
 
     # 静态文件服务
     static_dir = APP_DIR / "static"
+    if not static_dir.exists():
+        # Vercel 部署时复制到根目录
+        static_dir = BASE_DIR / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
 

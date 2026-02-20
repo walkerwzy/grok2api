@@ -5,10 +5,21 @@ from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 
 router = APIRouter()
 
-_admin_static_dir = Path(__file__).resolve().parents[2] / "static"
-if not _admin_static_dir.exists():
-    _admin_static_dir = Path(__file__).resolve().parents[4] / "static"
-STATIC_DIR = _admin_static_dir
+
+def _find_static_dir():
+    possible_paths = [
+        Path(__file__).resolve().parents[2] / "static",
+        Path(__file__).resolve().parents[4] / "static",
+        Path("/var/task/app/static"),
+        Path("/var/task/static"),
+    ]
+    for p in possible_paths:
+        if p.exists():
+            return p
+    return possible_paths[0]
+
+
+STATIC_DIR = _find_static_dir()
 
 
 @router.get("/admin/debug-paths", include_in_schema=False)

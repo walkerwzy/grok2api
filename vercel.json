@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "fastapi",
-  "buildCommand": "cp -r app/static/. /var/task/app/static/",
   "env": {
     "LOG_LEVEL": "INFO",
     "LOG_FILE_ENABLED": "false",

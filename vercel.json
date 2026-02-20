@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "fastapi",
-  "buildCommand": "uv pip install --system -r pyproject.toml && cp -r app/static ./static",
+  "buildCommand": "uv pip install --system -r pyproject.toml",
+  "installCommand": "uv pip install --system -r pyproject.toml",
   "env": {
     "LOG_LEVEL": "INFO",
     "LOG_FILE_ENABLED": "false",

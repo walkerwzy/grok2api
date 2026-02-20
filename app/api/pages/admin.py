@@ -1,10 +1,20 @@
 from pathlib import Path
 
 from fastapi import APIRouter
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 
 router = APIRouter()
-STATIC_DIR = Path(__file__).resolve().parents[2] / "static"
+
+_admin_static_dir = Path(__file__).resolve().parents[2] / "static"
+if not _admin_static_dir.exists():
+    _admin_static_dir = Path(__file__).resolve().parents[4] / "static"
+STATIC_DIR = _admin_static_dir
+
+
+def _serve_page(file_path: Path):
+    if not file_path.exists():
+        return JSONResponse({"error": "Page not available"})
+    return FileResponse(file_path)
 
 
 @router.get("/admin", include_in_schema=False)
@@ -14,19 +24,19 @@ async def admin_root():
 
 @router.get("/admin/login", include_in_schema=False)
 async def admin_login():
-    return FileResponse(STATIC_DIR / "admin/pages/login.html")
+    return _serve_page(STATIC_DIR / "admin/pages/login.html")
 
 
 @router.get("/admin/config", include_in_schema=False)
 async def admin_config():
-    return FileResponse(STATIC_DIR / "admin/pages/config.html")
+    return _serve_page(STATIC_DIR / "admin/pages/config.html")
 
 
 @router.get("/admin/cache", include_in_schema=False)
 async def admin_cache():
-    return FileResponse(STATIC_DIR / "admin/pages/cache.html")
+    return _serve_page(STATIC_DIR / "admin/pages/cache.html")
 
 
 @router.get("/admin/token", include_in_schema=False)
 async def admin_token():
-    return FileResponse(STATIC_DIR / "admin/pages/token.html")
+    return _serve_page(STATIC_DIR / "admin/pages/token.html")

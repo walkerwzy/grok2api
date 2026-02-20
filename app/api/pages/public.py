@@ -12,8 +12,6 @@ def _find_static_dir():
     possible_paths = [
         Path(__file__).resolve().parents[2] / "static",
         Path(__file__).resolve().parents[4] / "static",
-        Path("/var/task/app/static"),
-        Path("/var/task/static"),
     ]
     for p in possible_paths:
         if p.exists():
@@ -21,17 +19,15 @@ def _find_static_dir():
     return possible_paths[0]
 
 
+def _get_public_dir(static_dir: Path):
+    public_dir = static_dir / "public"
+    if public_dir.exists():
+        return public_dir
+    return static_dir / "public_page"
+
+
 STATIC_DIR = _find_static_dir()
-
-
-@router.get("/debug-paths", include_in_schema=False)
-async def debug_paths():
-    return JSONResponse({
-        "static_dir": str(STATIC_DIR),
-        "static_exists": STATIC_DIR.exists(),
-        "public_login_exists": (STATIC_DIR / "public_page/pages/login.html").exists(),
-        "admin_login_exists": (STATIC_DIR / "admin/pages/login.html").exists(),
-    })
+PUBLIC_DIR = _get_public_dir(STATIC_DIR)
 
 
 @router.get("/", include_in_schema=False)
@@ -45,7 +41,7 @@ async def root():
 async def public_login():
     if not is_public_enabled():
         raise HTTPException(status_code=404, detail="Not Found")
-    file_path = STATIC_DIR / "public_page/pages/login.html"
+    file_path = PUBLIC_DIR / "pages/login.html"
     if not file_path.exists():
         return JSONResponse({"error": "Login page not available"})
     return FileResponse(file_path)
@@ -55,7 +51,7 @@ async def public_login():
 async def public_imagine():
     if not is_public_enabled():
         raise HTTPException(status_code=404, detail="Not Found")
-    file_path = STATIC_DIR / "public_page/pages/imagine.html"
+    file_path = PUBLIC_DIR / "pages/imagine.html"
     if not file_path.exists():
         return JSONResponse({"error": "Imagine page not available"})
     return FileResponse(file_path)
@@ -65,7 +61,7 @@ async def public_imagine():
 async def public_voice():
     if not is_public_enabled():
         raise HTTPException(status_code=404, detail="Not Found")
-    file_path = STATIC_DIR / "public_page/pages/voice.html"
+    file_path = PUBLIC_DIR / "pages/voice.html"
     if not file_path.exists():
         return JSONResponse({"error": "Voice page not available"})
     return FileResponse(file_path)
@@ -75,7 +71,7 @@ async def public_voice():
 async def public_video():
     if not is_public_enabled():
         raise HTTPException(status_code=404, detail="Not Found")
-    file_path = STATIC_DIR / "public_page/pages/video.html"
+    file_path = PUBLIC_DIR / "pages/video.html"
     if not file_path.exists():
         return JSONResponse({"error": "Video page not available"})
     return FileResponse(file_path)
@@ -85,7 +81,7 @@ async def public_video():
 async def public_chat():
     if not is_public_enabled():
         raise HTTPException(status_code=404, detail="Not Found")
-    file_path = STATIC_DIR / "public_page/pages/chat.html"
+    file_path = PUBLIC_DIR / "pages/chat.html"
     if not file_path.exists():
         return JSONResponse({"error": "Chat page not available"})
     return FileResponse(file_path)

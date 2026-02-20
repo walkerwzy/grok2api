@@ -7,12 +7,21 @@ from app.core.auth import is_public_enabled
 
 router = APIRouter()
 
-# Support both local and Vercel deployment paths
 _static_dir = Path(__file__).resolve().parents[2] / "static"
 if not _static_dir.exists():
-    # Vercel: check in project root
     _static_dir = Path(__file__).resolve().parents[4] / "static"
+
 STATIC_DIR = _static_dir
+
+
+@router.get("/debug-paths", include_in_schema=False)
+async def debug_paths():
+    return JSONResponse({
+        "static_dir": str(STATIC_DIR),
+        "static_exists": STATIC_DIR.exists(),
+        "public_login_exists": (STATIC_DIR / "public/pages/login.html").exists(),
+        "admin_login_exists": (STATIC_DIR / "admin/pages/login.html").exists(),
+    })
 
 
 @router.get("/", include_in_schema=False)

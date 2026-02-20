@@ -11,6 +11,15 @@ if not _admin_static_dir.exists():
 STATIC_DIR = _admin_static_dir
 
 
+@router.get("/admin/debug-paths", include_in_schema=False)
+async def admin_debug_paths():
+    return JSONResponse({
+        "static_dir": str(STATIC_DIR),
+        "static_exists": STATIC_DIR.exists(),
+        "admin_login_exists": (STATIC_DIR / "admin/pages/login.html").exists(),
+    })
+
+
 def _serve_page(file_path: Path):
     if not file_path.exists():
         return JSONResponse({"error": "Page not available"})

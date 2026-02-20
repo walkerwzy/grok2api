@@ -2,11 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "fastapi",
-  "installCommand": "pip install -r pyproject.toml",
-  "buildCommand": "pip install -r pyproject.toml",
+  "buildCommand": "uv pip install --system -r pyproject.toml",
+  "installCommand": "uv pip install --system -r pyproject.toml",
   "env": {
     "LOG_LEVEL": "INFO",
     "LOG_FILE_ENABLED": "false",
     "DATA_DIR": "/tmp/data"
+  },
+  "build": {
+    "env": {
+      "PYTHON_VERSION": "3.13"
+    }
   }
 }

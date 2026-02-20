@@ -129,6 +129,12 @@ def create_app() -> FastAPI:
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+    public_dir = static_dir / "public"
+    if not public_dir.exists():
+        public_dir = static_dir / "public_page"
+    if public_dir.exists():
+        app.mount("/static/public", StaticFiles(directory=public_dir), name="public_static")
+
     # 注册管理与公共路由
     app.include_router(admin_router, prefix="/v1/admin")
     app.include_router(public_router, prefix="/v1/public")

@@ -8,10 +8,5 @@
     "LOG_LEVEL": "INFO",
     "LOG_FILE_ENABLED": "false",
     "DATA_DIR": "/tmp/data"
-  },
-  "build": {
-    "env": {
-      "PYTHON_VERSION": "3.13"
-    }
   }
 }

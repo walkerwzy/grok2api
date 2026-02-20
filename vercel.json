@@ -9,5 +9,6 @@
     "LOG_FILE_ENABLED": "false",
     "DATA_DIR": "/tmp/data",
     "PYTHON_VERSION": "3.13"
-  }
+  },
+  "runtime": "python@3.13"
 }

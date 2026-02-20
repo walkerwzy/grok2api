@@ -2,12 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "fastapi",
-  "buildCommand": "pip3 install --break-system-packages -r requirements.txt && ls -la app/ && ls -la app/static/ 2>/dev/null || echo 'static not found'",
-  "installCommand": "pip3 install --break-system-packages -r requirements.txt",
   "env": {
     "LOG_LEVEL": "INFO",
     "LOG_FILE_ENABLED": "false",
-    "DATA_DIR": "/tmp/data",
-    "PYTHON_VERSION": "3.13"
+    "DATA_DIR": "/tmp/data"
   }
 }

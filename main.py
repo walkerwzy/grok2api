@@ -124,16 +124,17 @@ def create_app() -> FastAPI:
     )
     app.include_router(files_router, prefix="/v1/files")
 
-    # 静态文件服务
+    # 静态文件服务 - 先 mount 具体的，再 mount 通用的
     static_dir = APP_DIR / "static"
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     public_dir = static_dir / "public"
     if not public_dir.exists():
         public_dir = static_dir / "public_page"
     if public_dir.exists():
         app.mount("/static/public", StaticFiles(directory=public_dir), name="public_static")
+
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     # 注册管理与公共路由
     app.include_router(admin_router, prefix="/v1/admin")

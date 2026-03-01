@@ -8,7 +8,7 @@
 > [!NOTE]
 > 开源项目欢迎大家支持二开和PR，但请保留原作者标识和前端标识，尊重他人劳动成果～！
 
-基于 **FastAPI** 重构的 Grok2API，全面适配最新 Web 调用格式，支持流/非流式对话、图像生成/编辑、视频生成/超分（文生视频 / 图生视频）、深度思考，号池并发与自动负载均衡一体化。
+基于 **FastAPI** 重构的 Grok2API，全面适配最新 Web 调用格式，支持流/非流式对话、工具调用、图像生成/编辑、视频生成/超分（文生视频 / 图生视频）、深度思考，号池并发与自动负载均衡一体化。
 
 <img width="4800" height="4200" alt="image" src="https://github.com/user-attachments/assets/a6669674-8afe-4ae5-bf81-a2ec1f864233" />
 
@@ -109,6 +109,7 @@ docker compose up -d
 | `grok-4.1-thinking` | 4 | Basic/Super | 支持 | 支持 | - |
 | `grok-4.20-beta` | 1 | Basic/Super | 支持 | 支持 | - |
 | `grok-imagine-1.0` | - | Basic/Super | - | 支持 | - |
+| `grok-imagine-1.0-fast` | - | Basic/Super | - | 支持 | - |
 | `grok-imagine-1.0-edit` | - | Basic/Super | - | 支持 | - |
 | `grok-imagine-1.0-video` | - | Basic/Super | - | - | 支持 |
 
@@ -143,12 +144,15 @@ curl http://localhost:8000/v1/chat/completions \
 | `reasoning_effort` | string | 推理强度 | `none`, `minimal`, `low`, `medium`, `high`, `xhigh` |
 | `temperature` | number | 采样温度 | `0` ~ `2` |
 | `top_p` | number | nucleus 采样 | `0` ~ `1` |
+| `tools` | array | 工具定义 | OpenAI function tools |
+| `tool_choice` | string/object | 工具选择 | `auto`, `required`, `none` 或指定工具 |
+| `parallel_tool_calls` | boolean | 是否允许并行工具调用 | `true`, `false` |
 | `video_config` | object | **视频模型专用配置对象** | 支持：`grok-imagine-1.0-video` |
 | └─`aspect_ratio` | string | 视频宽高比 | `16:9`, `9:16`, `1:1`, `2:3`, `3:2`, `1280x720`, `720x1280`, `1792x1024`, `1024x1792`, `1024x1024` |
 | └─`video_length` | integer | 视频时长 (秒) | `6`, `10`, `15` |
 | └─`resolution_name` | string | 分辨率 | `480p`, `720p` |
 | └─`preset` | string | 风格预设 | `fun`, `normal`, `spicy`, `custom` |
-| `image_config` | object | **图片模型专用配置对象** | 支持：`grok-imagine-1.0` / `grok-imagine-1.0-edit` |
+| `image_config` | object | **图片模型专用配置对象** | 支持：`grok-imagine-1.0` / `grok-imagine-1.0-fast` / `grok-imagine-1.0-edit` |
 | └─`n` | integer | 生成数量 | `1` ~ `10` |
 | └─`size` | string | 图片尺寸 | `1280x720`, `720x1280`, `1792x1024`, `1024x1792`, `1024x1024` |
 | └─`response_format` | string | 响应格式 | `url`, `b64_json`, `base64` |
@@ -173,9 +177,59 @@ curl http://localhost:8000/v1/chat/completions \
 
 - `image_url/input_audio/file` 仅支持 URL 或 Data URI（`data:<mime>;base64,...`），裸 base64 会报错。
 - `reasoning_effort`：`none` 表示不输出思考，其他值都会输出思考内容。
-- `grok-imagine-1.0-edit` 必须提供图片，多图默认取最后一张与最后一个文本。
-- `grok-imagine-1.0-video` 支持文生视频与图生视频（通过 `image_url` 传参考图）。
+- 工具调用为**提示词模拟 + 客户端执行回填**：模型通过 `<tool_call>{...}</tool_call>` 输出调用请求，服务端解析为 `tool_calls`；不执行工具。
+- `grok-imagine-1.0-fast` 与瀑布流 imagine 生成链路一致，可直接通过 `/v1/chat/completions` 调用；其 `n/size/response_format` 由服务端 `[imagine_fast]` 统一控制。
+- `grok-imagine-1.0-fast` 在 `/v1/chat/completions` 的流式输出仅返回最终成图，不返回中间预览图。
+- `grok-imagine-1.0-fast` 流式 URL 出图会保持原始图片名（不追加 `-final` 后缀）。
+- 当图片疑似被审查拦截导致无最终图时，若开启 `image.blocked_parallel_enabled`，服务端会按 `image.blocked_parallel_attempts` 自动并行补偿生成，并优先使用不同 token；若仍无满足 `image.final_min_bytes` 的最终图则返回失败。
+- `grok-imagine-1.0-edit` 必须提供图片，多图默认取**最后 3 张**与最后一个文本。
+- `grok-imagine-1.0-video` 支持文生视频与图生视频（通过 `image_url` 传参考图，**仅取第 1 张**）。
 - 除上述外的其他参数将自动丢弃并忽略。
+
+<br>
+
+</details>
+
+<br>
+
+### `POST /v1/responses`
+
+> OpenAI Responses API 兼容接口
+
+```bash
+curl http://localhost:8000/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GROK2API_API_KEY" \
+  -d '{
+    "model": "grok-4",
+    "input": "解释一下量子隧穿",
+    "stream": true
+  }'
+```
+
+<details>
+<summary>支持的请求参数</summary>
+
+<br>
+
+| 字段 | 类型 | 说明 |
+| :-- | :-- | :-- |
+| `model` | string | 模型名称 |
+| `input` | string/array | 输入内容，支持字符串、消息数组或多模态内容块 |
+| `instructions` | string | 系统指令 |
+| `stream` | boolean | 是否流式输出 |
+| `temperature` | number | 采样温度 |
+| `top_p` | number | nucleus 采样 |
+| `tools` | array | 工具定义（支持 function 工具；内置工具类型见下方说明） |
+| `tool_choice` | string/object | 工具选择（auto/required/none 或指定工具） |
+| `parallel_tool_calls` | boolean | 是否允许并行工具调用 |
+| `reasoning` | object | 推理参数 |
+| └─`effort` | string | 推理强度 | `none`, `minimal`, `low`, `medium`, `high`, `xhigh` |
+
+**注意事项**：
+
+- 内置工具 `web_search` / `file_search` / `code_interpreter` 目前会映射为 function tool **触发调用**，但**不执行托管工具**，需客户端自行执行并回填。
+- 流式输出会包含 `response.output_text.*` 与 `response.function_call_arguments.*` 事件。
 
 <br>
 
@@ -217,6 +271,7 @@ curl http://localhost:8000/v1/images/generations \
 **注意事项**：
 
 - `quality`、`style` 参数为 OpenAI 兼容保留，当前版本暂不支持自定义。
+- 多图编辑若传入超过 3 张，仅取**最后 3 张**作为参考。
 
 <br>
 
@@ -310,6 +365,7 @@ curl http://localhost:8000/v1/images/edits \
 | **image** | `timeout` | 请求超时 | WebSocket 请求超时时间（秒）。 | `120` |
 |  | `stream_timeout` | 流空闲超时 | WebSocket 流式空闲超时时间（秒）。 | `120` |
 |  | `final_timeout` | 最终图超时 | 收到中等图后等待最终图的超时秒数。 | `15` |
+|  | `blocked_grace_seconds` | 审查宽限秒数 | 收到中等图后，判定疑似被审查的宽限秒数。 | `10` |
 |  | `nsfw` | NSFW 模式 | WebSocket 请求是否启用 NSFW。 | `true` |
 |  | `medium_min_bytes` | 中等图最小字节 | 判定中等质量图的最小字节数。 | `30000` |
 |  | `final_min_bytes` | 最终图最小字节 | 判定最终图的最小字节数（通常 JPG > 100KB）。 | `100000` |
